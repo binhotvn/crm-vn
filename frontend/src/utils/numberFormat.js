@@ -162,35 +162,41 @@ export function formatNumber(v, format, decimals) {
 }
 
 export function formatCurrency(value, format, currency = 'USD', precision = 2) {
-  value = value == null || value === '' ? 0 : value
+  value = value == null || value === '' ? 0 : value;
 
-  if (typeof precision != 'number') {
-    precision = cint(precision || window.sysdefaults.currency_precision || 2)
+  if (typeof precision !== 'number') {
+    precision = cint(precision || window.sysdefaults.currency_precision || 2);
   }
 
-  // If you change anything below, it's going to hurt a company in UAE, a bit.
+  // Ensure precision is appropriately handled
   if (precision > 2) {
-    let parts = cstr(value).split('.') // should be minimum 2, comes from the DB
-    let decimals = parts.length > 1 ? parts[1] : '' // parts.length == 2 ???
+    let parts = cstr(value).split('.');
+    let decimals = parts.length > 1 ? parts[1] : '';
 
-    if (decimals.length < 3 || decimals.length < precision) {
-      const fraction = 100
-
+    if (decimals.length < precision) {
+      const fraction = 100;
       if (decimals.length < cstr(fraction).length) {
-        precision = cstr(fraction).length - 1
+        precision = cstr(fraction).length - 1;
       }
     }
   }
 
-  format = getNumberFormat(format)
-  let symbol = getCurrencySymbol(currency)
+  // Fix for number formatting to ensure consistency like 500,000 instead of 5,00,000
+  format = 'en-US'; // Set to a locale format that ensures desired output
+
+  let symbol = getCurrencySymbol(currency);
+  let formattedValue = new Intl.NumberFormat(format, {
+    minimumFractionDigits: precision,
+    maximumFractionDigits: precision,
+  }).format(value);
 
   if (symbol) {
-    return __(symbol) + ' ' + formatNumber(value, format, precision)
+    return __(symbol) + ' ' + formattedValue;
   }
 
-  return formatNumber(value, format, precision)
+  return formattedValue;
 }
+
 
 function getNumberFormat(format = null) {
   return format || window.sysdefaults.number_format || '#,###.##'
